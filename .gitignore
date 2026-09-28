@@ -1,0 +1,72 @@
+# .NET build and distribution output (at any directory level)
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Aa]rtifacts/
+[Pp]ublish/
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+
+# Visual Studio and per-user solution/project state
+.vs/
+*.user
+*.suo
+*.rsuser
+*.userosscache
+*.sln.docstates
+*.sln.iml
+*.VC.db
+*.VC.VC.opendb
+
+# VS Code, Rider, ReSharper and other local IDE settings
+.vscode/
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+# Generated tests, coverage and diagnostic output
+[Tt]est[Rr]esults/
+[Cc]overage/
+*.coverage
+*.coveragexml
+coverage.cobertura.xml
+*.dmp
+*.log
+
+# Temporary files, editor backups and operating-system metadata
+*.tmp
+*.temp
+*.bak
+*.orig
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Task Manager user data and recovery files, wherever copied locally
+tasks.json
+tasks.backup.json
+tasks.unreadable-*.json
+tasks-*.tmp
+categories.json
+/data/
+/userdata/
+/AppData/
+
+# Local environment files and credentials
+.env
+.env.*
+!.env.example
+*.local.json
+*.pfx
+*.p12
+*.publishsettings
+*.pubxml
+
+# Selected sample screenshots in docs/screenshots/ are intentionally included.
