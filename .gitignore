@@ -68,5 +68,3 @@ categories.json
 *.p12
 *.publishsettings
 *.pubxml
-
-# Selected sample screenshots in docs/screenshots/ are intentionally included.

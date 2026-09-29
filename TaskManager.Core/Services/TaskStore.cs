@@ -54,16 +54,22 @@ public sealed class TaskStore
         }
     }
 
-    private static AppData Read(string path)
+    private static AppData Read(string path) => Parse(File.ReadAllText(path));
+
+    public static AppData Parse(string json)
     {
-        var data = JsonSerializer.Deserialize<AppData>(File.ReadAllText(path), Options)
+        var data = JsonSerializer.Deserialize<AppData>(json, Options)
             ?? throw new InvalidDataException("The data file is empty.");
         if (data.Version != 1) throw new NotSupportedException("This data file uses an unsupported version. Changes are disabled to protect it.");
         if (data.Tasks is null || data.Categories is null) throw new InvalidDataException("The data file has missing collections.");
+        data.Tags ??= [];
         var categories = new List<string> { "Personal", "School", "Work" };
         foreach (var category in data.Categories)
             if (!string.IsNullOrWhiteSpace(category) && !categories.Contains(category.Trim(), StringComparer.OrdinalIgnoreCase)) categories.Add(category.Trim());
         var ids = new HashSet<Guid>();
+        var tags = new List<string>();
+        foreach (var tag in data.Tags)
+            if (!string.IsNullOrWhiteSpace(tag) && !tags.Contains(tag.Trim(), StringComparer.OrdinalIgnoreCase)) tags.Add(tag.Trim());
         foreach (var task in data.Tasks)
         {
             if (task is null || string.IsNullOrWhiteSpace(task.Title) || !Enum.IsDefined(task.Priority)
@@ -71,15 +77,35 @@ public sealed class TaskStore
                 throw new InvalidDataException("A saved task contains invalid fields.");
             task.Title = task.Title.Trim();
             task.Description ??= "";
+            task.Notes ??= "";
+            task.Tags ??= [];
+            task.Subtasks ??= [];
             task.Category = string.IsNullOrWhiteSpace(task.Category) ? "Personal" : task.Category.Trim();
             var canonical = categories.FirstOrDefault(c => c.Equals(task.Category, StringComparison.OrdinalIgnoreCase));
             if (canonical is null) categories.Add(task.Category); else task.Category = canonical;
             if (task.Id == Guid.Empty || !ids.Add(task.Id)) { task.Id = Guid.NewGuid(); ids.Add(task.Id); }
             task.DueDate = task.DueDate.Date;
+            if (!Enum.IsDefined(task.Recurrence)) throw new InvalidDataException("A saved task has an invalid recurrence value.");
+            task.Tags = task.Tags.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            foreach (var tag in task.Tags) if (!tags.Contains(tag,StringComparer.OrdinalIgnoreCase)) tags.Add(tag);
+            var subtaskIds = new HashSet<Guid>();
+            foreach (var subtask in task.Subtasks)
+            {
+                if (subtask is null || string.IsNullOrWhiteSpace(subtask.Title)) throw new InvalidDataException("A saved subtask is invalid.");
+                subtask.Title = subtask.Title.Trim();
+                if (subtask.Id == Guid.Empty || !subtaskIds.Add(subtask.Id)) { subtask.Id = Guid.NewGuid(); subtaskIds.Add(subtask.Id); }
+            }
+            if (!task.IsCompleted) task.CompletedAt = null;
+            if (task.ReminderAt.HasValue && task.ReminderAt.Value.Year is < 1753 or > 9998) throw new InvalidDataException("A saved reminder has an invalid date.");
         }
         data.Categories = categories;
+        data.Tags = tags;
         return data;
     }
+
+    public static string Serialize(AppData data) => JsonSerializer.Serialize(data, Options);
+    public static AppData Import(string path) => Read(path);
+    public static void Export(string path, AppData data) => File.WriteAllText(path, Serialize(data));
 
     public void Save(AppData data)
     {

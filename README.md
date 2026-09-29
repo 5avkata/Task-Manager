@@ -1,115 +1,90 @@
 # Task Manager
 
-A Windows desktop task planner built with **C#, .NET 8, and Windows Forms**. Organize school, work, and personal tasks in a clean dashboard, with everything saved locally on your device.
+Task Manager is a native Windows 11 productivity application built with C#, WinUI 3, and the Windows App SDK. It combines a focused daily workspace, custom calendar, recurring tasks, reminders, insights, and local-first storage in a modern Fluent interface.
 
-## Features
+## Highlights
 
-- Create, edit, delete, and complete tasks with a title, description, category, priority, and due date.
-- Navigate between Dashboard, Today, Upcoming, All Tasks, and Completed.
-- View total, pending, completed, and overdue counts alongside completion progress.
-- Search by title, filter by category or priority, and sort by due date or priority.
-- Use Personal, School, and Work categories, or create your own.
-- Spot overdue tasks, confirm deletions, and receive clear validation messages.
-- Work with keyboard shortcuts, accessible controls, and a resizable interface with Windows DPI scaling support.
-- Automatically save tasks and categories as JSON, with backup recovery and no account or internet connection required during normal use.
+- Modern WinUI 3 shell with Mica, NavigationView, responsive Fluent surfaces, native controls, light/dark/system themes, and keyboard access.
+- Create, edit, complete, and delete tasks with priorities, categories, tags, due dates, and notes.
+- Dashboard centered on what needs attention today, recent completion progress, upcoming work, and priority balance.
+- Focused Today view with progress, attention, and next-deadline summaries.
+- Chronologically grouped Upcoming view with seven-day and priority planning context.
+- All Tasks overview with category distribution and a compact due-soon list.
+- Completed history with weekly, monthly, and recent-completion summaries.
+- Custom monthly calendar with task previews, day details, and date-aware task creation.
+- Modern task cards with contextual actions, category and tag chips, reminder and recurrence indicators, and subtask progress.
+- Quick task editor with progressively disclosed notes, tags, reminders, recurrence, and reorderable subtasks.
+- Search, due-date/priority sorting, and compact filters for category, priority, tag, status, and recurrence.
+- Contextual bulk command bar for completion, category, priority, and deletion changes.
+- Persistent local reminders with Windows notifications when available and catch-up when the app next opens.
+- Validated JSON export/import, atomic saves, backup recovery, and compatibility with existing Task Manager data.
 
-## Technologies
+## Technology
 
-- **C#** and **.NET 8** (`net8.0-windows`)
-- **Windows Forms** with custom-painted controls and vector icons
-- **System.Text.Json** for local persistence
-- No third-party packages, commercial UI libraries, backend, or database
+- C# and .NET 10
+- WinUI 3 and Windows App SDK 2.5.1
+- XAML with an MVVM-oriented presentation layer
+- CommunityToolkit.Mvvm
+- System.Text.Json
+
+## Architecture
+
+```text
+TaskManager.Core/         Shared model, query, recurrence, reminder, and persistence logic
+TaskManager.WinUI/        WinUI 3 application, XAML views, view models, dialogs, and Windows adapters
+TaskManager.Core.Tests/   Cross-platform regression checks for reusable application logic
+```
+
+The model and persistence code live directly in `TaskManager.Core`. The WinUI application and regression checks both reference that project, so the JSON schema and compatibility behavior have a single implementation.
 
 ## Build and run
 
-### Requirements
+Requirements:
 
-- Windows 10 or Windows 11
-- .NET 8 SDK, or a newer SDK capable of targeting .NET 8
-- .NET 8 **Desktop Runtime** to run the framework-dependent application; this is included with the .NET 8 SDK on Windows
-
-Alternatively, use Visual Studio 2022 with .NET 8 support and the **.NET desktop development** workload.
-
-### Command line
-
-Open PowerShell in the project folder, then run:
+- Windows 11 or a supported Windows 10 release
+- .NET 10 SDK
+- Windows App SDK development components. The command-line templates can be installed with:
 
 ```powershell
-dotnet build TaskManager.csproj -c Release
-dotnet run --project TaskManager.csproj -c Release --no-build
+dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates
 ```
 
-The built executable is at `bin\Release\net8.0-windows\TaskManager.exe`.
+Build and run from the repository root:
 
-### Visual Studio
+```powershell
+dotnet build TaskManager.sln -c Release -p:Platform=x64
+dotnet run --project TaskManager.WinUI/TaskManager.WinUI.csproj -c Release -p:Platform=x64
+```
 
-Open `TaskManager.csproj`, allow package restore to finish, and press **F5** to build and run.
+The default project configuration is unpackaged and self-contained. It runs without enabling Windows Developer Mode and carries its Windows App SDK runtime dependencies alongside the application. The included package manifest remains available for a future signed MSIX release.
 
-## Screenshots
+Run the reusable logic checks with:
 
-These screenshots use fictional tasks from the built-in self-tests, rendered at 125% Windows display scaling.
+```powershell
+dotnet run --project TaskManager.Core.Tests/TaskManager.Core.Tests.csproj -c Release
+```
 
-### Dashboard
+## Existing data
 
-![Dashboard with task statistics, completion progress, and pending tasks](docs/screenshots/dashboard.png)
-
-### Search and filters
-
-![All Tasks filtered by title, category, and priority](docs/screenshots/task-list.png)
-
-## Usage notes
-
-Dashboard, Today, and Upcoming show pending tasks. Today includes tasks due on the current local date; Upcoming includes later dates. All Tasks includes completed items, and Completed shows only finished tasks. A task is overdue when its due date is before today and it remains incomplete.
-
-Dashboard totals always describe the complete task collection. Search and filters apply to the list and remain active when changing sections; **Reset** clears them. Sorting places pending tasks before completed tasks.
-
-| Shortcut | Action |
-| --- | --- |
-| `Ctrl+N` | Create a task |
-| `Ctrl+F` | Focus search |
-| Arrow keys in the task list | Navigate tasks and actions |
-| `Enter` in the task list | Edit a task, or activate the focused checkbox/action |
-| `Space` in the task list | Toggle completion |
-| `Delete` in the task list | Request deletion, with confirmation |
-| `Enter`, `Space`, `F4`, or `Alt+Down` on a dropdown | Open its options |
-| `Escape` in an open dropdown | Cancel the selection |
-
-Double-click a task title to edit it. Hover over a title to read its full description. In the date field, Left/Right changes the day, Page Up/Down changes the month, and Home selects today.
-
-## Local data
-
-Tasks and categories are stored outside the project and executable directories:
+The WinUI application reads the same per-user data as the previous version:
 
 ```text
 %LOCALAPPDATA%\SchoolPortfolio\TaskManager\tasks.json
 ```
 
-The app uses atomic file replacement and keeps the previous saved state in `tasks.backup.json`. Unreadable data is preserved before recovery is attempted. If the data cannot be safely loaded or uses an unsupported version, the app protects it with a read-only session. Failed saves leave the current task list intact and show an error.
+The schema remains version 1 with additive optional fields. Older files receive safe defaults for tags, notes, subtasks, recurrence, reminders, and completion timestamps. Atomic replacement, automatic backup recovery, unreadable-file preservation, and unsupported-version protection remain intact.
 
-To restore a backup manually, close the app, make a separate copy of the data folder, and copy `tasks.backup.json` over `tasks.json`. Local JSON files are not encrypted and should not be committed to Git.
+Theme preference is stored separately as `settings.json` in the same application data folder.
 
-## Project structure
+## Keyboard shortcuts
 
-```text
-Assets/        Application icon
-Diagnostics/   Built-in self-tests using isolated temporary data
-Models/        Task model and enums
-Services/      Task queries and JSON persistence/recovery
-UI/            Forms, reusable controls, theme, and icons
-docs/          Screenshots used by this README
-Program.cs     Application entry point
-```
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+N` | Create a task |
+| `Ctrl+F` | Focus search in task views |
+| `Escape` | Cancel a multi-selection |
+| `Enter` | Activate the focused control |
 
-## Verification
+## Privacy
 
-After building, run the built-in checks from the project folder:
-
-```powershell
-$process = Start-Process .\bin\Release\net8.0-windows\TaskManager.exe `
-    -ArgumentList '--self-test' -WindowStyle Hidden -Wait -PassThru
-$process.ExitCode # 0 means all checks passed
-```
-
-Results and test screenshots are written to `TestResults/`. The checks cover persistence and recovery, task workflows, filtering and sorting, keyboard and accessible actions, empty states, long lists, and dashboard resize/maximize/restore behavior. Tests use temporary data, not your saved tasks.
-
-Build output, test results, IDE settings, temporary files, and local user data are excluded by `.gitignore`. Only the selected demonstration screenshots under `docs/screenshots/` belong in the repository.
+All task data remains on the local device unless the user explicitly exports a backup. The application has no backend, login, analytics, or cloud dependency.
